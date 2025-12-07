@@ -1,39 +1,91 @@
 #include "ssd1306.h"
 
-int main(void){
-    return 0;
+
+static void hor_addressing_set_addr(uint8_t page_start, uint8_t page_end, uint8_t col_start, uint8_t col_end);
+static void page_addressing_set_addr(uint8_t page_start, uint8_t column_start);
+static void ssd1306_sendCommand(uint8_t cmd);
+static void ssd1306_sendData(uint8_t data);
+
+
+extern uint8_t* ssd1306_framebuffer;
+
+
+void ssd1306_init(uint8_t addr_mode){
+    uint8_t command_seq[] = {
+        SET_DISPLAY_OFF,
+        SET_CLOCK_DIV, 0x80,
+        SET_MUX_RATIO, 0x3f,        /* 64MUX */
+        SET_DISPLAY_OFFSET, 0x00,
+        (SET_START_LINE | 0x00),
+        CHARGE_PUMP_SETTING, 0x14,
+        SET_ADDRESSING_MODE, (addr_mode & 0x03),
+        (SEGMENT_REMAP | 0x01),
+        (SET_COM_SCAN_DIR | 0x08),
+        SET_COM_PINS, 0x12,
+        SET_CONTRAST, 0xcf,
+        SET_PRE_CHARGE, 0xf1,
+        SET_VCOM_DSEL, 0x20,
+        DISPLAY_ON_RAM,
+        NORMAL_DISPLAY, 
+        SET_DISPLAY_ON
+    };
+    for(int i = 0; i < sizeof(command_seq); i++){
+        ssd1306_sendCommand(command_seq[i]);
+    }
 }
 
 
+void ssd1306_sendFramebuffer(void){
+    hor_addressing_set_addr(0, 7, 0, 127);
 
-void set_addressing_mode(E_ADDRESSING_MODE addr_mode){
-    // Send 0x20
-    // Send addressing mode
-}
+    uint8_t *data_buf = ssd1306_framebuffer;
 
-/*
- * Page Addressing Mode
- * 8 pages, 128 columns.
- * Set the starting page and column. After each read/write it increments
- * column. Resets to start when ends.
- */
-void page_addressing(uint8_t column_start, uint8_t page_start, uint8_t data){
-    // Set Page Start (10110 + [2:0])
-    // Send lower nibble (0x0 + [3:0])
-    uint8_t column_start_l = column_start & 0x0f;
-    // Send higher nibble (0x1 + [3:0])
-    uint8_t column_start_h = column_start & 0xf0;
-
-    // Send data byte (D/C = 1)
+    for (uint8_t packet = 0; packet < 64; packet++) {
+        // TODO: Send CB_DATA
+        uint8_t cb[] = {CB_SINGLE_DATA};
+        i2c_write(SSD1306_SLA_0, cb, 1, true);
+        i2c_write(SSD1306_SLA_0, &data_buf[packet*16], 16, false); 
+    }
 }
 
 
-void hor_scroll_command(uint8_t vertical){
-    // Send scroll command
-    // Send 0x00
-    // Start page address
-    // Time interval
-    // End page address
-    // Send 0x00
-    // Send 0xff
+static void page_addressing_set_addr(uint8_t page_start, uint8_t column_start){
+    uint8_t command_seq[] = {
+        (SET_PAGE_START | (page_start & 0x07)),
+        (SET_COL_ADDR_L | (column_start & 0x0f)),
+        (SET_COL_ADDR_H | ((column_start & 0xf0) >> 4)),
+    };
+
+    for(int i = 0; i < sizeof(command_seq); i++){
+        ssd1306_sendCommand(command_seq[i]);
+    }
+}
+
+
+static void hor_addressing_set_addr(uint8_t page_start, uint8_t page_end, uint8_t col_start, uint8_t col_end){
+    uint8_t command_seq[] = {
+        SET_COL_ADDRESS, col_start, col_end,
+    };
+    uint8_t command_seq2[] = {
+        SET_PAGE_ADDRESS, page_start, page_end,
+    };
+
+    for(int i = 0; i < sizeof(command_seq2); i++){
+        ssd1306_sendCommand(command_seq2[i]);
+    }
+    for(int i = 0; i < sizeof(command_seq); i++){
+        ssd1306_sendCommand(command_seq[i]);
+    }
+}
+
+
+static void ssd1306_sendCommand(uint8_t cmd){
+    uint8_t cmd_buf[] = {CB_SINGLE_COMMAND, cmd};
+    i2c_write(SSD1306_SLA_0, cmd_buf, sizeof(cmd_buf), false); 
+}
+
+
+static void ssd1306_sendData(uint8_t data){
+    uint8_t data_buf[] = {CB_SINGLE_DATA, data};
+    i2c_write(SSD1306_SLA_0, data_buf, sizeof(data_buf), false); 
 }

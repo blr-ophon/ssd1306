@@ -1,7 +1,9 @@
 #include "i2c.h"
+#include "uart.h"
 
 /*
  * 1) Not necessary to stop to switch between master transmit and master receive.
+ * FIXME: Repeated start
  */
 
 static void i2c_start(void);
@@ -35,7 +37,6 @@ ISR(TWI_vect){
 
 
 void i2c_write(uint8_t sla, uint8_t* data_buf, uint8_t len, bool keep_alive){
-
     while(I2C_FSM.busy);        // block until free
 
     I2C_FSM.mode = MASTER_TRANSMITTER_MODE;
@@ -69,25 +70,26 @@ void i2c_read(uint8_t sla, uint8_t* recv_buf, uint8_t len, bool keep_alive){
 
 
 void i2c_init(uint8_t bit_rate){
+    I2C_FSM.busy = false;
     TWBR = bit_rate;
-    TWCR |= (1 << TWEN);
+    TWCR = (1 << TWEN) | (1 << TWIE);
     sei();
 }
 
 
 void i2c_start(void){
-    TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
+    TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN) | (1 << TWIE);
 }
 
 
 void i2c_stop(void){
-    TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
+    TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN) | (1 << TWIE);
 }
 
 
 void i2c_transmit(uint8_t data){
     TWDR = data;
-    TWCR = (1 << TWINT) | (1 << TWEN);
+    TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWIE);
 }
 
 
@@ -96,7 +98,7 @@ void i2c_state_machine(void){
 
 
 static void i2c_fsm_MT(void){
-    switch(TWSR){
+    switch(TWSR & 0xf8){
         case 0x08:  /* START condition transmitted */
             /* Send SLA+W */
             i2c_transmit(I2C_FSM.sla << 1);
@@ -113,6 +115,7 @@ static void i2c_fsm_MT(void){
 
         case 0x20:  /* SLA+W transmitted, NACK returned */
             // TODO: Notify error. Finish FSM
+            break;
 
         case 0x28:  /* Data byte has been transmitted. ACK returned */
             I2C_FSM.index ++;
@@ -120,8 +123,11 @@ static void i2c_fsm_MT(void){
                 I2C_FSM.busy = false;
 
                 if(!I2C_FSM.keep_alive){
+                    UART_print("STOP\r\n");
                     i2c_stop();
                 }
+            }else{
+                i2c_transmit(I2C_FSM.buf[I2C_FSM.index]);
             }
             break;
 
@@ -140,7 +146,7 @@ static void i2c_fsm_MT(void){
 
 
 static void i2c_fsm_MR(void){
-    switch(TWSR){
+    switch(TWSR & 0xf8){
         case 0x08:  /* START condition transmitted */
             /* Send SLA+W */
             i2c_transmit((I2C_FSM.sla << 1) | 1);
@@ -170,6 +176,8 @@ static void i2c_fsm_MR(void){
                 if(!I2C_FSM.keep_alive){
                     i2c_stop();
                 }
+            }else{
+                // TODO: read next
             }
             break;
 

@@ -24,7 +24,7 @@ typedef struct{
 }I2CFsm;
 
 
-void i2c_init(uint8_t bit_rate, uint8_t enable_ack);
+void i2c_init(uint8_t bit_rate);
 void i2c_write(uint8_t sla, uint8_t* data_buf, uint8_t len, bool keep_alive);
 void i2c_read(uint8_t sla, uint8_t* recv_buf, uint8_t len, bool keep_alive);
 void i2c_stop(void);
