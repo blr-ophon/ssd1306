@@ -1,5 +1,7 @@
 #include "i2c.h"
 #include "uart.h"
+#include <string.h>
+#include <stdlib.h>
 
 /*
  * 1) Not necessary to stop to switch between master transmit and master receive.
@@ -13,6 +15,8 @@ static void i2c_fsm_MR(void);
 
 
 volatile I2CFsm I2C_FSM;
+volatile int counter;
+volatile char counter_buf[16];
 
 
 ISR(TWI_vect){
@@ -49,6 +53,7 @@ void i2c_write(uint8_t sla, uint8_t* data_buf, uint8_t len, bool keep_alive){
 
     /* Send start condition / Repeated start */
     i2c_start();
+    counter = 0;
 }
 
 
@@ -110,6 +115,10 @@ static void i2c_fsm_MT(void){
 
         case 0x18:  /* SLA+W transmitted, ACK returned */
             /* Send data */
+            counter++;
+            itoa(counter, counter_buf, 10);
+            // UART_print(counter_buf);
+            //UART_print("DATA\r\n");
             i2c_transmit(I2C_FSM.buf[I2C_FSM.index]);
             break;
 
@@ -123,7 +132,6 @@ static void i2c_fsm_MT(void){
                 I2C_FSM.busy = false;
 
                 if(!I2C_FSM.keep_alive){
-                    UART_print("STOP\r\n");
                     i2c_stop();
                 }
             }else{

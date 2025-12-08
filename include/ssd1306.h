@@ -2,6 +2,7 @@
 #define SSD1306_H
 
 #include <stdint.h>
+#include <string.h>
 #include "i2c.h"
 
 
@@ -13,7 +14,6 @@
 #define CB_MULTIPLE_COMMANDS    0x80
 #define CB_SINGLE_DATA          0x40
 #define CB_MULTIPLE_DATA        0xc0
-
 
 // Fundamental Command
 #define SET_CONTRAST        0x81
@@ -40,7 +40,6 @@
 // Charge Pump
 #define CHARGE_PUMP_SETTING 0x8d
 
-
 // Addressing Setting 
 #define SET_ADDRESSING_MODE 0x20
 /* Page Addressing mode */
@@ -51,7 +50,6 @@
 #define SET_COL_ADDRESS     0x21
 #define SET_PAGE_ADDRESS    0x22
 
-
 // Continuous vertical and horizontal scroll setup
 #define R_HOR_SCROLL        0x26
 #define L_HOR_SCROLL        0x27
@@ -60,7 +58,7 @@
 #define DEACTIVATE_SCROLL   0x2e
 #define ACTIVATE_SCROLL     0x2f
 
-#define FRAMEBUFFER_SIZE    128*8
+#define FRAMEBUFFER_SIZE    (128*8)
 
 
 typedef enum{
@@ -70,7 +68,11 @@ typedef enum{
 } E_ADDRESSING_MODE;
 
 void ssd1306_clear(void);
-void ssd1306_init(uint8_t addr_mode);
+void ssd1306_init(void);
 void ssd1306_sendFramebuffer(void);
+void send_framebuftest(void);
+
+void fb_clear(void);
+void fb_entire_on(void);
 
 #endif

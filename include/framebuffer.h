@@ -6,8 +6,8 @@
 #include "ssd1306.h"
 
 
-void fb_clear(void);
-void fb_entire_on(void);
+// void fb_clear(void);
+// void fb_entire_on(void);
 
 
 #endif
