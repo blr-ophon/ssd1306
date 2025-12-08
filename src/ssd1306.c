@@ -1,16 +1,16 @@
 #include "ssd1306.h"
+#include <util/delay.h>
 
 
-static void hor_addressing_set_addr(uint8_t page_start, uint8_t page_end, uint8_t col_start, uint8_t col_end);
-static void page_addressing_set_addr(uint8_t page_start, uint8_t column_start);
-static void ssd1306_sendCommand(uint8_t cmd);
-static void ssd1306_sendData(uint8_t data);
+static void SetPageColAddress(uint8_t page_start, uint8_t page_end, uint8_t col_start, uint8_t col_end);
+static void SendCommand(uint8_t cmd);
+static void SendData(uint8_t data);
 
 
-extern uint8_t ssd1306_framebuffer[128*8];
+extern volatile I2CFsm I2C_FSM;
 
 
-void ssd1306_init(){
+void SSD1306_Init(){
     uint8_t command_seq[] = {
         SET_DISPLAY_OFF,
         SET_CLOCK_DIV, 0x80,
@@ -30,26 +30,24 @@ void ssd1306_init(){
         SET_DISPLAY_ON
     };
     for(int i = 0; i < sizeof(command_seq); i++){
-        ssd1306_sendCommand(command_seq[i]);
+        SendCommand(command_seq[i]);
     }
 }
 
 
-void ssd1306_sendFramebuffer(void){
-    hor_addressing_set_addr(0, 7, 4, 123);
+void SSD1306_SendFramebuffer(uint8_t *fb){
+    SetPageColAddress(0, 7, 0, 127);
 
-    uint8_t *data_buf = ssd1306_framebuffer;
     uint8_t cb[] = {CB_SINGLE_DATA};
-    uint8_t margin[4] = {0};
 
     for (uint8_t packet = 0; packet < 64; packet++) {
         i2c_write(SSD1306_SLA_0, cb, 1, true);
-        i2c_write(SSD1306_SLA_0, &data_buf[packet*16], 16, false); 
+        i2c_write(SSD1306_SLA_0, &fb[packet*16], 16, false); 
     }
 }
 
 
-static void hor_addressing_set_addr(uint8_t page_start, uint8_t page_end, uint8_t col_start, uint8_t col_end){
+static void SetPageColAddress(uint8_t page_start, uint8_t page_end, uint8_t col_start, uint8_t col_end){
     uint8_t command_seq[] = {
         SET_ADDRESSING_MODE, HORIZONTAL_ADDR_MODE,
         SET_PAGE_ADDRESS, page_start, page_end,
@@ -57,28 +55,23 @@ static void hor_addressing_set_addr(uint8_t page_start, uint8_t page_end, uint8_
     };
 
     for(int i = 0; i < sizeof(command_seq); i++){
-        ssd1306_sendCommand(command_seq[i]);
+        SendCommand(command_seq[i]);
     }
 }
 
 
-static void ssd1306_sendCommand(uint8_t cmd){
+static void SendCommand(uint8_t cmd){
     uint8_t cmd_buf[] = {CB_SINGLE_COMMAND, cmd};
     i2c_write(SSD1306_SLA_0, cmd_buf, sizeof(cmd_buf), false); 
 }
 
 
-static void ssd1306_sendData(uint8_t data){
+static void SendData(uint8_t data){
     uint8_t data_buf[] = {CB_SINGLE_DATA, data};
     i2c_write(SSD1306_SLA_0, data_buf, sizeof(data_buf), false); 
 }
 
-
-
-
-
-
-
+/*
 static void page_addressing_set_addr(uint8_t page_start, uint8_t column_start){
     uint8_t command_seq[] = {
         (SET_PAGE_START | (page_start & 0x07)),
@@ -90,13 +83,4 @@ static void page_addressing_set_addr(uint8_t page_start, uint8_t column_start){
         ssd1306_sendCommand(command_seq[i]);
     }
 }
-
-void send_framebuftest(void){
-    page_addressing_set_addr(2,0);
-    uint8_t *data_buf = ssd1306_framebuffer;
-    uint8_t cb[] = {CB_SINGLE_DATA};
-    for (uint8_t packet = 0; packet < 8; packet++) {
-        i2c_write(SSD1306_SLA_0, cb, 1, true);
-        i2c_write(SSD1306_SLA_0, &data_buf[packet*16], 16, false); 
-    }
-}
+*/

@@ -1,7 +1,4 @@
 #include "i2c.h"
-#include "uart.h"
-#include <string.h>
-#include <stdlib.h>
 
 /*
  * 1) Not necessary to stop to switch between master transmit and master receive.
@@ -9,6 +6,7 @@
  */
 
 static void i2c_start(void);
+static void i2c_stop(void);
 static void i2c_transmit(uint8_t data);
 static void i2c_fsm_MT(void);
 static void i2c_fsm_MR(void);
@@ -40,6 +38,9 @@ ISR(TWI_vect){
 }
 
 
+/*
+ * @brief Initializes FSM, send start condition.
+ */
 void i2c_write(uint8_t sla, uint8_t* data_buf, uint8_t len, bool keep_alive){
     while(I2C_FSM.busy);        // block until free
 
@@ -82,23 +83,19 @@ void i2c_init(uint8_t bit_rate){
 }
 
 
-void i2c_start(void){
+static void i2c_start(void){
     TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN) | (1 << TWIE);
 }
 
 
-void i2c_stop(void){
+static void i2c_stop(void){
     TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN) | (1 << TWIE);
 }
 
 
-void i2c_transmit(uint8_t data){
+static void i2c_transmit(uint8_t data){
     TWDR = data;
     TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWIE);
-}
-
-
-void i2c_state_machine(void){
 }
 
 
@@ -115,11 +112,7 @@ static void i2c_fsm_MT(void){
 
         case 0x18:  /* SLA+W transmitted, ACK returned */
             /* Send data */
-            counter++;
-            itoa(counter, counter_buf, 10);
-            // UART_print(counter_buf);
-            //UART_print("DATA\r\n");
-            i2c_transmit(I2C_FSM.buf[I2C_FSM.index]);
+            i2c_transmit(I2C_FSM.buf[I2C_FSM.index++]);
             break;
 
         case 0x20:  /* SLA+W transmitted, NACK returned */
@@ -127,7 +120,6 @@ static void i2c_fsm_MT(void){
             break;
 
         case 0x28:  /* Data byte has been transmitted. ACK returned */
-            I2C_FSM.index ++;
             if(I2C_FSM.index == I2C_FSM.buf_len){
                 I2C_FSM.busy = false;
 
@@ -135,18 +127,20 @@ static void i2c_fsm_MT(void){
                     i2c_stop();
                 }
             }else{
-                i2c_transmit(I2C_FSM.buf[I2C_FSM.index]);
+                i2c_transmit(I2C_FSM.buf[I2C_FSM.index++]);
             }
             break;
 
         case 0x30:  /* Data byte has been transmitted. NACK returned */
             /* Send data again */
-            i2c_transmit(I2C_FSM.buf[I2C_FSM.index]);
+            I2C_FSM.index--;
+            i2c_transmit(I2C_FSM.buf[I2C_FSM.index++]);
             // TODO: count send attempts. Notify error if too much tries. 
             break;
 
         case 0x38:  /* Arbitration lost */
             break;
+
         default:
             break;
     }

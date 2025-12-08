@@ -67,9 +67,8 @@ typedef enum{
     PAGE_ADDR_MODE               = 2,
 } E_ADDRESSING_MODE;
 
-void ssd1306_clear(void);
-void ssd1306_init(void);
-void ssd1306_sendFramebuffer(void);
-void send_framebuftest(void);
+
+void SSD1306_Init(void);
+void SSD1306_SendFramebuffer(uint8_t *fb);
 
 #endif
