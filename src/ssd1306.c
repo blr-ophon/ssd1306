@@ -7,20 +7,7 @@ static void ssd1306_sendCommand(uint8_t cmd);
 static void ssd1306_sendData(uint8_t data);
 
 
-uint8_t ssd1306_framebuffer[128*8] = {0};
-
-void fb_clear(void){
-    memset(ssd1306_framebuffer, 0, 128*8);
-    memset(ssd1306_framebuffer, 0xaa, 8);
-    memset(&ssd1306_framebuffer[1024-8], 0xaa, 8);
-}
-
-
-void fb_entire_on(void){
-    memset(ssd1306_framebuffer, 0xff, 128*8);
-    memset(ssd1306_framebuffer, 0xaa, 8);
-    memset(&ssd1306_framebuffer[1024-8], 0xaa, 8);
-}
+extern uint8_t ssd1306_framebuffer[128*8];
 
 
 void ssd1306_init(){

@@ -72,7 +72,4 @@ void ssd1306_init(void);
 void ssd1306_sendFramebuffer(void);
 void send_framebuftest(void);
 
-void fb_clear(void);
-void fb_entire_on(void);
-
 #endif
