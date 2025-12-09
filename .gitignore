@@ -2,3 +2,4 @@ build
 bin
 *.plist
 .cache
+Makefile

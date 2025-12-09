@@ -70,17 +70,3 @@ static void SendData(uint8_t data){
     uint8_t data_buf[] = {CB_SINGLE_DATA, data};
     i2c_write(SSD1306_SLA_0, data_buf, sizeof(data_buf), false); 
 }
-
-/*
-static void page_addressing_set_addr(uint8_t page_start, uint8_t column_start){
-    uint8_t command_seq[] = {
-        (SET_PAGE_START | (page_start & 0x07)),
-        (SET_COL_ADDR_L | (column_start & 0x0f)),
-        (SET_COL_ADDR_H | ((column_start & 0xf0) >> 4)),
-    };
-
-    for(int i = 0; i < sizeof(command_seq); i++){
-        ssd1306_sendCommand(command_seq[i]);
-    }
-}
-*/

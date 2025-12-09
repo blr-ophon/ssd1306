@@ -1,9 +1,5 @@
 #include "i2c.h"
 
-/*
- * 1) Not necessary to stop to switch between master transmit and master receive.
- * FIXME: Repeated start
- */
 
 static void i2c_start(void);
 static void i2c_stop(void);
@@ -13,8 +9,6 @@ static void i2c_fsm_MR(void);
 
 
 volatile I2CFsm I2C_FSM;
-volatile int counter;
-volatile char counter_buf[16];
 
 
 ISR(TWI_vect){
@@ -38,9 +32,6 @@ ISR(TWI_vect){
 }
 
 
-/*
- * @brief Initializes FSM, send start condition.
- */
 void i2c_write(uint8_t sla, uint8_t* data_buf, uint8_t len, bool keep_alive){
     while(I2C_FSM.busy);        // block until free
 
@@ -54,7 +45,6 @@ void i2c_write(uint8_t sla, uint8_t* data_buf, uint8_t len, bool keep_alive){
 
     /* Send start condition / Repeated start */
     i2c_start();
-    counter = 0;
 }
 
 
