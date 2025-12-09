@@ -6,10 +6,11 @@
 #include "ssd1306.h"
 
 
-void fb_DrawPixel(uint8_t x, uint8_t y);
-void fb_ClearPixel(uint8_t x, uint8_t y);
-void fb_EntireOn(void);
-void fb_Clear(void);
+void FB_DrawPixel(uint8_t x, uint8_t y);
+void FB_ClearPixel(uint8_t x, uint8_t y);
+void FB_EntireOn(void);
+void FB_Clear(void);
+void FB_DrawRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t fill);
 
 
 #endif
